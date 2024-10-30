@@ -1925,7 +1925,7 @@ class ModelPT(LightningModule, Model):
                 if self._chakra_profile_enabled and not self._chakra_profile_in_progress:
                     if self.trainer.global_step >= self._chakra_profile_start_step and self.trainer.global_step < self._chakra_profile_end_step:
                         logging.info(f"====== Start chakra profiling from global_step {self.trainer.global_step} ======")
-                        self._et.register_callback(str(self._chakra_trace_dir / f'rank_{get_rank()}.json'))
+                        self._et.register_callback(str(self._chakra_trace_dir / f'rank-{get_rank()}.json'))
                         self._prof.start()
                         self._chakra_profile_in_progress = True
 
@@ -1979,15 +1979,8 @@ class ModelPT(LightningModule, Model):
                 if self._chakra_profile_enabled and self._chakra_profile_in_progress:
                     if self.trainer.global_step - 1 >= self._chakra_profile_end_step:
                         logging.info(f"====== End chakra profiling at global_step {self.trainer.global_step} ======")
-                        pg_config_info = (
-                            torch.distributed.distributed_c10d._world.pg_config_info
-                        )
-                        rf_handle = torch.autograd._record_function_with_args_enter(
-                            "## process_group:init ##", json.dumps(pg_config_info)
-                        )
-                        torch.autograd._record_function_with_args_exit(rf_handle)
                         self._prof.stop()
-                        self._prof.export_chrome_trace(str(self._kineto_trace_dir / f'rank_{get_rank()}.json'))
+                        self._prof.export_chrome_trace(str(self._kineto_trace_dir / f'rank-{get_rank()}.json'))
                         self._et.unregister_callback()
                         self._chakra_profile_in_progress = False
                     elif self.trainer.global_step-1 >= self._chakra_profile_start_step:
